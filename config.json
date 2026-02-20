@@ -1,0 +1,76 @@
+{
+  "bot": {
+    "name": "Panindigan Bot",
+    "username": "PanindiganBot",
+    "version": "0.1.0",
+    "description": "Ang opisyal na Panindigan support at community bot.",
+    "supportGroupLink": "https://t.me/panindiganofficial",
+    "developerCredit": "Made By Nazzel 🩷",
+    "timezone": "Asia/Manila",
+    "defaultLanguage": "fil"
+  },
+  "prefix": {
+    "enabled": true,
+    "values": ["P!", "/"],
+    "caseSensitive": false,
+    "allowBothInGroup": true,
+    "allowBothInPrivate": true
+  },
+  "database": {
+    "maxConnections": 20,
+    "idleTimeoutMs": 30000,
+    "connectionTimeoutMs": 2000
+  },
+  "levels": {
+    "xpPerMessage": 10,
+    "xpCooldownSeconds": 60,
+    "tiers": [
+      { "level": 1,  "name": "🌱 Baguhan",  "xpRequired": 0 },
+      { "level": 5,  "name": "🔥 Aktibo",   "xpRequired": 500 },
+      { "level": 10, "name": "⭐ Regular",   "xpRequired": 1500 },
+      { "level": 20, "name": "💎 Veteran",   "xpRequired": 5000 },
+      { "level": 35, "name": "👑 Elite",     "xpRequired": 15000 },
+      { "level": 50, "name": "🏆 Legend",    "xpRequired": 40000 }
+    ]
+  },
+  "moderation": {
+    "maxWarnings": 3,
+    "autoBanOnMaxWarnings": true
+  },
+  "rateLimit": {
+    "maxMessages": 10,
+    "windowMs": 60000
+  },
+  "maintenance": {
+    "enabled": false,
+    "message": "🔧 Ang bot ay kasalukuyang nasa maintenance. Pakiulit mamaya."
+  },
+  "welcome": {
+    "enabled": true,
+    "defaultBackground": "assets/welcome_bg.jpg",
+    "defaultTextColor": "#FFFFFF",
+    "defaultMessage": "Maligayang pagdating, {name}! 🎉\nIkaw ang ika-{count} miyembro ng {group}."
+  },
+  "goodbye": {
+    "enabled": true,
+    "defaultBackground": "assets/goodbye_bg.jpg",
+    "defaultTextColor": "#FFFFFF",
+    "defaultMessage": "Paalam, {name}. 👋\nSana makita ka namin muli sa {group}."
+  },
+  "help": {
+    "footer": "━━━━━━━━━━━━━━━━━━━━━\n        Made By Nazzel 🩷",
+    "commandsPerPage": 6
+  },
+  "nsfw": {
+    "enabled": true,
+    "threshold": 0.75,
+    "deleteOnDetect": true,
+    "notifyUser": true,
+    "notifyModerator": true,
+    "autoWarnOnDetect": true,
+    "autoBanAfterNsfwWarnings": 3,
+    "scanImages": true,
+    "scanVideoThumbnails": true,
+    "allowedRoles": []
+  }
+}

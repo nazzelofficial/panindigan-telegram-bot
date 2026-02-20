@@ -1,0 +1,34 @@
+{
+  "name": "panindigan-telegram-bot",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.30.1",
+  "description": "Panindigan Telegram Bot - TypeScript · Node.js · Grammy · PostgreSQL",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "migrate": "ts-node-dev --respawn src/migrate.ts"
+  },
+  "keywords": [],
+  "author": "Nazzel",
+  "license": "MIT",
+  "dependencies": {
+    "@tensorflow/tfjs-node": "^4.22.0",
+    "canvas": "^2.11.2",
+    "grammy": "^1.13.1",
+    "nsfwjs": "^2.4.0",
+    "pg": "^8.11.0",
+    "sharp": "^0.32.0",
+    "winston": "^3.9.0",
+    "node-fetch": "^2.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20.3.1",
+    "@types/node-fetch": "^2.6.2",
+    "@types/pg": "^8.6.6",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.2.2"
+  }
+}
