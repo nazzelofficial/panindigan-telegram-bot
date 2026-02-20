@@ -1,6 +1,7 @@
 import { Bot, InlineKeyboard } from "grammy";
 import config, { ADMIN_IDS } from "../config";
 import { upsertUser, findUserByTelegramId, banUserByTelegramId, unbanUserByTelegramId, setNotificationsByTelegramId, setLanguageByTelegramId, getAllUsers } from "../database/queries/users.queries";
+import { setUserDateOfBirth, markUserAgeVerified, markUserAgeRejected } from "../database/queries/users.queries";
 import { getOrCreateUserLevel, getTopUsers, setLevel, addXpAndGet } from "../database/queries/user_levels.queries";
 import { query } from "../database/connection";
 import { adminOnly } from "../guards";
@@ -224,6 +225,15 @@ export function registerCoreCommands(bot: Bot) {
     const from = ctx.from;
     if (!from) return;
     await upsertUser({ telegram_id: from.id, username: from.username || null, first_name: from.first_name || null, last_name: from.last_name || null });
+    // If user has no DOB or not verified, ask privately for DOB (YYYY-MM-DD)
+    const dbUser = await findUserByTelegramId(from.id);
+    if (!dbUser?.date_of_birth || !dbUser?.is_age_verified) {
+      await ctx.reply('Maligayang pagdating! Bago magpatuloy, kailangan naming i-verify ang iyong edad (14+). Paki-type ang iyong petsa ng kapanganakan dito sa grupong ito sa format YYYY-MM-DD. Ang impormasyon ay mananatiling pribado.');
+      // mark in session to expect DOB
+      (ctx as any).session = (ctx as any).session || {};
+      (ctx as any).session._awaiting_dob = true;
+      return;
+    }
     const kb = new InlineKeyboard().text("FAQ", "faq").text("Help", "help").row().text("My Profile", "myprofile");
     await ctx.reply(`Maligayang pagdating, ${from.first_name || ''}!`, { reply_markup: kb });
   });
@@ -302,7 +312,15 @@ export function registerCoreCommands(bot: Bot) {
     const nextTier = config.levels.tiers.find((t) => t.level > level.level);
     const xpNeeded = nextTier ? (nextTier.xpRequired - level.xp) : 0;
     const progress = nextTier ? Math.floor((level.xp / nextTier.xpRequired) * 100) : 100;
-    await ctx.reply(`ID: ${from.id}\nUsername: ${from.username || '—'}\nName: ${from.first_name || ''} ${from.last_name || ''}\nLevel: ${level.level} (${tier.name})\nXP: ${level.xp}\nNext Level In: ${xpNeeded} XP\nProgress: ${progress}%`);
+    let profile = `ID: ${from.id}\nUsername: ${from.username || '—'}\nName: ${from.first_name || ''} ${from.last_name || ''}\nLevel: ${level.level} (${tier.name})\nXP: ${level.xp}\nNext Level In: ${xpNeeded} XP\nProgress: ${progress}%`;
+    if (dbUser?.date_of_birth) {
+      try {
+        const dob = new Date(dbUser.date_of_birth);
+        const ageNow = Math.floor((Date.now() - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
+        profile += `\nDOB: ${dbUser.date_of_birth} — Edad: ${ageNow}`;
+      } catch {}
+    }
+    await ctx.reply(profile);
   });
 
   bot.command("rank", async (ctx) => {
@@ -807,6 +825,35 @@ export function registerCoreCommands(bot: Bot) {
 
   // global message handler for AFK and trivia answers
   bot.on('message', async (ctx) => {
+    // If session awaiting DOB, try to parse message as YYYY-MM-DD
+    const s = (ctx as any).session || {};
+    if (s._awaiting_dob && ctx.message?.text && ctx.from) {
+      const txt = ctx.message.text.trim();
+      const m = txt.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!m) {
+        await ctx.reply('Mali ang format. Paki-type ang petsa sa format YYYY-MM-DD (hal.: 2008-02-20).');
+        return;
+      }
+      const dob = new Date(txt + 'T00:00:00Z');
+      if (isNaN(dob.getTime())) {
+        await ctx.reply('Hindi valid ang petsa. Pakisubukang muli.');
+        return;
+      }
+      const age = Math.floor((Date.now() - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
+      // persist DOB
+      await setUserDateOfBirth(ctx.from.id, txt).catch(() => {});
+      if (age >= 14) {
+        await markUserAgeVerified(ctx.from.id).catch(() => {});
+        await ctx.reply('Salamat — na-verify ang iyong edad. Maaari ka nang gumamit ng lahat ng features.');
+      } else {
+        await markUserAgeRejected(ctx.from.id).catch(() => {});
+        await ctx.reply('Paumanhin—kinakailangan ang edad na 14+ para magamit ang bot. Kung mali ang petsa, i-type muli ang /start upang magbigay ng tamang petsa.');
+      }
+      s._awaiting_dob = false;
+      (ctx as any).session = s;
+      return;
+    }
+
     // clear AFK when user sends a message
     if (ctx.from && afkMap.has(ctx.from.id)) {
       afkMap.delete(ctx.from.id);

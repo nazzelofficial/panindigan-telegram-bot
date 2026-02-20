@@ -14,6 +14,7 @@ import { sessionMiddleware } from "./middleware/session.middleware";
 import { loggerMiddleware } from "./middleware/logger.middleware";
 import { verifyMiddleware } from "./middleware/verify.middleware";
 import verifyService from "./services/verify.service";
+import { ageVerificationMiddleware } from "./middleware/age.middleware";
 // all commands consolidated in core.ts
 
 async function main() {
@@ -37,6 +38,8 @@ async function main() {
   bot.use(loggerMiddleware());
   // verification should block processing when not allowed
   bot.use(verifyMiddleware());
+  // require age verification for most commands
+  bot.use(ageVerificationMiddleware());
   bot.use(sessionMiddleware());
   bot.use(prefixMiddleware());
   bot.use(bannedMiddleware());

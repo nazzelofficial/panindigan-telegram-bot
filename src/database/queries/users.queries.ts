@@ -20,6 +20,21 @@ export async function upsertUser(payload: {
   return res.rows[0];
 }
 
+export async function setUserDateOfBirth(telegramId: number, dob: string) {
+  const res = await query("UPDATE users SET date_of_birth = $1, updated_at = NOW() WHERE telegram_id = $2 RETURNING *", [dob, telegramId]);
+  return res.rows[0] || null;
+}
+
+export async function markUserAgeVerified(telegramId: number) {
+  const res = await query("UPDATE users SET is_age_verified = TRUE, age_verified_at = NOW(), updated_at = NOW() WHERE telegram_id = $1 RETURNING *", [telegramId]);
+  return res.rows[0] || null;
+}
+
+export async function markUserAgeRejected(telegramId: number) {
+  const res = await query("UPDATE users SET is_age_verified = FALSE, age_verified_at = NULL, updated_at = NOW() WHERE telegram_id = $1 RETURNING *", [telegramId]);
+  return res.rows[0] || null;
+}
+
 export async function findUserByTelegramId(telegramId: number) {
   const res = await query("SELECT * FROM users WHERE telegram_id = $1", [telegramId]);
   return res.rows[0] || null;
