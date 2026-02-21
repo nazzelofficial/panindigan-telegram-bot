@@ -59,7 +59,9 @@ WORKDIR /app
 
 # Copy package metadata and install production deps only
 COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile --prod || pnpm install --prod
+# Use node_modules built in the builder stage so compiled native addons (like canvas)
+# are preserved; runtime image has the required system libs installed above.
+COPY --from=builder /app/node_modules ./node_modules
 
 # Copy built artifacts from builder
 COPY --from=builder /app/dist ./dist
