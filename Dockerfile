@@ -14,6 +14,8 @@ RUN apt-get update \
     libgif-dev \
     librsvg2-dev \
     libvips-dev \
+    curl \
+    unzip \
     git \
   && rm -rf /var/lib/apt/lists/*
 
@@ -30,6 +32,14 @@ RUN pnpm install --frozen-lockfile || pnpm install
 # Copy the rest and build
 COPY . .
 RUN pnpm run build
+# Ensure an assets directory exists (avoids COPY failing when no assets folder present)
+RUN mkdir -p /app/assets || true
+# Download Inter font (SIL Open Font License) into assets/fonts for canvas rendering
+RUN mkdir -p /app/assets/fonts && \
+  curl -L -o /tmp/inter.zip https://github.com/rsms/inter/releases/latest/download/Inter-latest.zip && \
+  unzip -o /tmp/inter.zip -d /tmp/inter && \
+  cp /tmp/inter/fonts/ttf/*.ttf /app/assets/fonts/ || true; \
+  rm -rf /tmp/inter /tmp/inter.zip || true
 
 # Runtime stage: smaller image with production deps only
 FROM node:20-bullseye-slim AS runtime
