@@ -1,6 +1,23 @@
-import { createCanvas, loadImage } from "canvas";
 import sharp from "sharp";
 import fs from "fs";
+
+let createCanvas: any;
+let loadImage: any;
+const tryRequire = (name: string) => {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    return require(name);
+  }
+  catch (e) {
+    return null;
+  }
+};
+const canvasModule = tryRequire('@napi-rs/canvas') || tryRequire('canvas');
+if (!canvasModule) {
+  throw new Error('No canvas implementation found. Install @napi-rs/canvas or canvas.');
+}
+createCanvas = canvasModule.createCanvas;
+loadImage = canvasModule.loadImage;
 
 export async function renderWelcomeCard(options: {
   backgroundPath?: string;
