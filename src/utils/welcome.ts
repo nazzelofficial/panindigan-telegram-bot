@@ -1,4 +1,3 @@
-import sharp from "sharp";
 import fs from "fs";
 
 let createCanvas: any;
@@ -72,7 +71,24 @@ export async function renderWelcomeCard(options: {
   }
 
   const buffer = canvas.toBuffer('image/png');
-  // optimize with sharp
-  const out = await sharp(buffer).png().toBuffer();
-  return out;
+  // try to optimize with sharp if available; otherwise fall back to jimp or return raw buffer
+  const tryRequire = (name: string) => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      return require(name);
+    }
+    catch (e) {
+      return null;
+    }
+  };
+  const sharp = tryRequire('sharp');
+  if (sharp) {
+    return await sharp(buffer).png().toBuffer();
+  }
+  const Jimp = tryRequire('jimp');
+  if (Jimp) {
+    const img = await Jimp.read(buffer as any);
+    return await img.getBufferAsync(Jimp.MIME_PNG);
+  }
+  return buffer;
 }

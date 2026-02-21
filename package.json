@@ -16,12 +16,12 @@
   "license": "MIT",
   "dependencies": {
     "@tensorflow/tfjs-node": "^4.22.0",
-    "canvas": "^2.11.2",
     "grammy": "^1.13.1",
     "nsfwjs": "^2.4.0",
     "pg": "^8.11.0",
     "sharp": "^0.32.0",
     "@napi-rs/canvas": "^0.1.40",
+    "jimp": "^0.22.10",
     "winston": "^3.9.0",
     "node-fetch": "^2.6.7"
   },

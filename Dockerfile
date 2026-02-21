@@ -28,6 +28,8 @@ COPY package.json pnpm-lock.yaml* ./
 
 # Install full dependencies (including dev) for build
 RUN pnpm install --frozen-lockfile || pnpm install
+# Ensure native modules are built (force rebuild so canvas/sharp native addons are created)
+RUN pnpm rebuild --unsafe-perm || true
 
 # Copy the rest and build
 COPY . .
@@ -62,6 +64,10 @@ COPY package.json pnpm-lock.yaml* ./
 # Use node_modules built in the builder stage so compiled native addons (like canvas)
 # are preserved; runtime image has the required system libs installed above.
 COPY --from=builder /app/node_modules ./node_modules
+
+# As a safety net, attempt to rebuild native modules in the runtime image as well
+# so deployments that modify NODE_PLATFORM or strip native build output still work.
+RUN pnpm rebuild --unsafe-perm --prod || true
 
 # Copy built artifacts from builder
 COPY --from=builder /app/dist ./dist
