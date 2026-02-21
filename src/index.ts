@@ -1,6 +1,5 @@
-import "./global";
 import { Bot } from "grammy";
-import config, { DATABASE_URL } from "./config";
+import { DATABASE_URL } from "./config";
 import logger from "./logger";
 import { testConnection } from "./database/connection";
 import { registerCoreCommands } from "./commands/core";
