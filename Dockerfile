@@ -64,6 +64,8 @@ RUN pnpm install --frozen-lockfile --prod || pnpm install --prod
 # Copy built artifacts from builder
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/assets ./assets
+# Copy configuration JSON into runtime image so compiled code can require it
+COPY --from=builder /app/config.json ./
 
 ENV NODE_ENV=production
 
