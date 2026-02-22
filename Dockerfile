@@ -30,6 +30,8 @@ COPY package.json pnpm-lock.yaml* ./
 RUN pnpm install --frozen-lockfile || pnpm install
 # Ensure native modules are built (force rebuild so canvas/sharp native addons are created)
 RUN pnpm rebuild --unsafe-perm || true
+# Rebuild tfjs-node native addon from source to ensure tfjs_binding.node exists
+RUN npm rebuild @tensorflow/tfjs-node --build-addon-from-source || pnpm rebuild @tensorflow/tfjs-node --build-addon-from-source || true
 
 # Copy the rest and build
 COPY . .
@@ -68,6 +70,8 @@ COPY --from=builder /app/node_modules ./node_modules
 # As a safety net, attempt to rebuild native modules in the runtime image as well
 # so deployments that modify NODE_PLATFORM or strip native build output still work.
 RUN pnpm rebuild --unsafe-perm --prod || true
+# As an extra step, rebuild tfjs-node in runtime too (safeguard for different platform)
+RUN npm rebuild @tensorflow/tfjs-node --build-addon-from-source || pnpm rebuild @tensorflow/tfjs-node --build-addon-from-source || true
 
 # Copy built artifacts from builder
 COPY --from=builder /app/dist ./dist

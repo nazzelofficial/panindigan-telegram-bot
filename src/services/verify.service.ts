@@ -1,4 +1,4 @@
-import fetch from 'node-fetch';
+// use global fetch provided by Node 18+
 import logger from '../logger';
 
 const VERIFY_URL = process.env.API_VERIFY_URL || 'https://api.panindigan.com/verify';

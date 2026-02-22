@@ -1,24 +1,54 @@
 import { Context, NextFunction } from "grammy";
 import config from "../config";
-import nsfwjs from "nsfwjs";
-import * as tf from "@tensorflow/tfjs-node";
-import fetch from "node-fetch";
+// use global fetch provided by Node 18+
 import logger from "../logger";
 import { query } from "../database/connection";
 import { getChatSettings } from "../database/queries/chat_settings.queries";
 
-let model: nsfwjs.NSFWJS | null = null;
-
-async function loadModel() {
-  if (model) return model;
+// Use a lightweight, non-AI heuristic based on skin-tone pixel ratio via Jimp.
+const tryRequire = (name: string) => {
   try {
-    model = await nsfwjs.load();
-    return model;
-  } catch (err) {
-    logger.error("Failed to load NSFW model: " + (err as Error).message);
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    return require(name);
+  } catch (e) {
     return null;
   }
+};
+const Jimp = tryRequire('jimp');
+
+async function estimateSkinRatio(buffer: Buffer) {
+  if (!Jimp) return 0;
+  try {
+    const img = await Jimp.read(buffer as any);
+    const { width, height } = img.bitmap;
+    const total = Math.min(width * height, 20000);
+    const step = Math.max(1, Math.floor((width * height) / total));
+    let skinCount = 0;
+    let sampled = 0;
+    for (let y = 0; y < height; y += step) {
+      for (let x = 0; x < width; x += step) {
+        const idx = (y * width + x) << 2;
+        const pixel = img.bitmap.data;
+        const r = pixel[idx];
+        const g = pixel[idx + 1];
+        const b = pixel[idx + 2];
+        // simple rule-based skin detection
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        const isSkin = r > 95 && g > 40 && b > 20 && (max - min) > 15 && r > g && r > b && (r - g) > 15;
+        if (isSkin) skinCount++;
+        sampled++;
+        if (sampled >= total) break;
+      }
+      if ((sampled) >= total) break;
+    }
+    return sampled > 0 ? skinCount / sampled : 0;
+  } catch (e) {
+    return 0;
+  }
 }
+
+// No AI model used; we rely on heuristic estimateSkinRatio
 
 export function nsfwMiddleware() {
   return async (ctx: Context, next: NextFunction) => {
@@ -51,15 +81,10 @@ export function nsfwMiddleware() {
       const botFile = await ctx.api.getFile(fileId);
       const fileUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${botFile.file_path}`;
       const res = await fetch(fileUrl);
-      const buffer = await res.buffer();
-      await loadModel();
-      if (!model) return next();
-      const image = tf.node.decodeImage(buffer, 3) as any;
-      const predictions = await (model as any).classify(image);
-      image.dispose();
-      const porn = predictions.find((p: any) => p.className.toLowerCase().includes("porn"))?.probability || 0;
-      const sexy = predictions.find((p: any) => p.className.toLowerCase().includes("sexy"))?.probability || 0;
-      const combined = porn + sexy;
+      const buffer = Buffer.from(await res.arrayBuffer());
+      const skinRatio = await estimateSkinRatio(buffer);
+      // Map skinRatio (0..1) to approximate confidence (0..1)
+      const combined = skinRatio; 
       if (combined >= config.nsfw.threshold) {
         // delete message
         if (config.nsfw.deleteOnDetect) {
