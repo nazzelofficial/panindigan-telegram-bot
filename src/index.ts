@@ -17,48 +17,101 @@ import { ageVerificationMiddleware } from "./middleware/age.middleware";
 // all commands consolidated in core.ts
 
 async function main() {
+  logger.info("⚙️ Initializing bot startup sequence...");
+  
   if (!process.env.BOT_TOKEN) {
-    logger.error("BOT_TOKEN not set in environment variables.");
+    logger.error("❌ CRITICAL: BOT_TOKEN not set in environment variables. Cannot proceed.", {
+      error: "MISSING_BOT_TOKEN"
+    });
     process.exit(1);
   }
+  logger.info("✅ BOT_TOKEN loaded successfully");
 
   if (!DATABASE_URL) {
-    logger.warn("DATABASE_URL not set. DB features will fail until set.");
+    logger.warn("⚠️ DATABASE_URL not configured. Database features will be unavailable.", {
+      warning: "NO_DATABASE_URL"
+    });
   } else {
-    await testConnection();
+    try {
+      logger.info("🔄 Testing database connection...");
+      await testConnection();
+      logger.info("✅ Database connection successful");
+    } catch (err) {
+      logger.error("❌ Database connection failed", {
+        error: (err as Error).message,
+        timestamp: new Date().toISOString()
+      });
+      throw err;
+    }
   }
 
   const bot = new Bot(process.env.BOT_TOKEN as string);
+  logger.info("✅ Bot instance created");
 
   // start remote verification loop early
-  verifyService.startVerificationLoop(60_000).catch((e) => logger.warn('verify start failed: ' + (e as Error).message));
-
-  // middleware order
-  bot.use(loggerMiddleware());
-  // verification should block processing when not allowed
-  bot.use(verifyMiddleware());
-  // require age verification for most commands
-  bot.use(ageVerificationMiddleware());
-  bot.use(sessionMiddleware());
-  bot.use(prefixMiddleware());
-  bot.use(bannedMiddleware());
-  bot.use(rateLimitMiddleware());
-  bot.use(mutedMiddleware());
-  bot.use(xpMiddleware());
-  bot.use(nsfwMiddleware());
-  // commands
-  registerCoreCommands(bot);
-  // All commands live in core.ts
-
-  bot.catch((err) => {
-    logger.error(`Bot error: ${err}`);
+  logger.info("🔐 Starting verification service...");
+  verifyService.startVerificationLoop(60_000).catch((e) => {
+    logger.warn("⚠️ Verification service startup failed", {
+      error: (e as Error).message,
+      timestamp: new Date().toISOString()
+    });
   });
 
-  logger.info("Starting bot...");
+  // middleware order
+  logger.info("📦 Registering middleware stack...");
+  bot.use(loggerMiddleware());
+  logger.debug("  └─ Logger middleware registered");
+  // verification should block processing when not allowed
+  bot.use(verifyMiddleware());
+  logger.debug("  └─ Verification middleware registered");
+  // require age verification for most commands
+  bot.use(ageVerificationMiddleware());
+  logger.debug("  └─ Age verification middleware registered");
+  bot.use(sessionMiddleware());
+  logger.debug("  └─ Session middleware registered");
+  bot.use(prefixMiddleware());
+  logger.debug("  └─ Prefix middleware registered");
+  bot.use(bannedMiddleware());
+  logger.debug("  └─ Banned users middleware registered");
+  bot.use(rateLimitMiddleware());
+  logger.debug("  └─ Rate limit middleware registered");
+  bot.use(mutedMiddleware());
+  logger.debug("  └─ Muted users middleware registered");
+  bot.use(xpMiddleware());
+  logger.debug("  └─ XP middleware registered");
+  bot.use(nsfwMiddleware());
+  logger.debug("  └─ NSFW filter middleware registered");
+  logger.info("✅ All middleware registered successfully");
+
+  // commands
+  logger.info("🎮 Registering command handlers...");
+  registerCoreCommands(bot);
+  logger.info("✅ All command handlers registered");
+
+  bot.catch((err) => {
+    logger.error("❌ Unhandled bot error", {
+      error: String(err),
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  logger.info("🚀 Starting bot polling...");
   await bot.start();
+  logger.info("✅ Bot is now running");
 }
 
+logger.info("════════════════════════════════════════════════════════");
+logger.info("           🤖 PANINDIGAN BOT LAUNCHER 🤖");
+logger.info("════════════════════════════════════════════════════════");
+
 main().catch((err) => {
-  logger.error("Fatal error:", (err as Error).message);
+  logger.error("❌ FATAL ERROR: Bot startup failed", {
+    error: (err as Error).message,
+    stack: (err as Error).stack,
+    timestamp: new Date().toISOString()
+  });
+  logger.info("════════════════════════════════════════════════════════");
+  logger.info("Bot shutdown due to fatal error");
+  logger.info("════════════════════════════════════════════════════════");
   process.exit(1);
 });

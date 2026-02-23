@@ -5,7 +5,7 @@
     "version": "0.1.0",
     "description": "Ang opisyal na Panindigan support at community bot.",
     "supportGroupLink": "https://t.me/panindiganofficial",
-    "developerCredit": "Made By Nazzel 🩷",
+    "developerCredit": "Made By Nazzel ❤️",
     "timezone": "Asia/Manila",
     "defaultLanguage": "fil"
   },
@@ -58,7 +58,7 @@
     "defaultMessage": "Paalam, {name}. 👋\nSana makita ka namin muli sa {group}."
   },
   "help": {
-    "footer": "━━━━━━━━━━━━━━━━━━━━━\n        Made By Nazzel 🩷",
+    "footer": "━━━━━━━━━━━━━━━━━━━━━\n        Made By Nazzel ❤️",
     "commandsPerPage": 6
   },
   "nsfw": {
